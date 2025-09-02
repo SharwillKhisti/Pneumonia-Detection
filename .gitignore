@@ -1,1 +1,10 @@
+# Ignore model checkpoints and training logs
+checkpoints/
+runs/
+outputs/*.png
+outputs/*.txt
+*.pth
+*.tfevents.*
+__pycache__/
+*.pyc
 DATA/
