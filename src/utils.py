@@ -83,6 +83,24 @@ def visualize_prediction(image_tensor, label, pred, class_names, gradcam_img=Non
 
 def load_checkpoint(model, checkpoint_path, device):
     """Load model weights from checkpoint."""
-    model.load_state_dict(torch.load(checkpoint_path, map_location=device))
-    logging.info(f"📦 Loaded checkpoint from {checkpoint_path}")
+    checkpoint = torch.load(checkpoint_path, map_location=device)
+
+    if isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
+        model.load_state_dict(checkpoint["model_state_dict"])
+        logging.info(f"📦 Loaded model_state_dict from checkpoint: {checkpoint_path}")
+    else:
+        model.load_state_dict(checkpoint)
+        logging.info(f"📦 Loaded raw state_dict from checkpoint: {checkpoint_path}")
+
     return model
+
+def get_target_layer(model, model_name):
+    """
+    Return the appropriate target layer for Grad-CAM based on model architecture.
+    """
+    if "resnet" in model_name:
+        return model.layer4[-1]
+    elif "densenet" in model_name:
+        return model.features[-1]
+    else:
+        raise ValueError(f"Unsupported model architecture: {model_name}")

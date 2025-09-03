@@ -21,7 +21,7 @@ MODEL_CHECKPOINTS = {
     "densenet121_phase1": "densenet121_phase1.pth"
 }
 
-# 🧠 Class mapping
+# 🧠 Class mapping (must match training dataset)
 CLASS_MAP = {0: "Normal", 1: "Pneumonia"}
 
 # 📊 Model performance stats
@@ -44,7 +44,7 @@ def predict(model, image_tensor):
         output = model(image_tensor)
         probs = torch.softmax(output, dim=1)
         confidence, pred_class = torch.max(probs, dim=1)
-        return CLASS_MAP[pred_class.item()], confidence.item(), pred_class.item()
+        return CLASS_MAP[pred_class.item()], confidence.item(), pred_class.item(), probs
 
 # 🧠 Explanation logic
 def generate_explanation(prediction, confidence, checkpoint_name):
@@ -69,12 +69,14 @@ def generate_explanation(prediction, confidence, checkpoint_name):
         🧭 **Interpretation:** The model sees balanced lung fields, clear costophrenic angles, and no signs of consolidation or abnormal texture.
         """
 
-# 🖼️ Image preprocessing
+# 🖼️ Image preprocessing (with ImageNet normalization)
 def preprocess_image(uploaded_file):
     image = Image.open(uploaded_file).convert("RGB")
     transform = transforms.Compose([
         transforms.Resize((224, 224)),
-        transforms.ToTensor()
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                             std=[0.229, 0.224, 0.225])
     ])
     return transform(image).unsqueeze(0), image.resize((224, 224))
 
@@ -97,8 +99,9 @@ if uploaded_file and selected_model_key:
     model.eval()
 
     # 🔍 Predict
-    prediction, confidence, class_idx = predict(model, image_tensor)
+    prediction, confidence, class_idx, probs = predict(model, image_tensor)
     st.subheader(f"🩺 Prediction: **{prediction}** ({confidence*100:.2f}%)")
+    st.write("🔍 Raw Probabilities:", {CLASS_MAP[i]: f"{p*100:.2f}%" for i, p in enumerate(probs.squeeze().tolist())})
 
     # 🔥 Grad-CAM
     target_layer = get_target_layer(model, base_model_name)
