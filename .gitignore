@@ -8,3 +8,6 @@ outputs/*.txt
 __pycache__/
 *.pyc
 DATA/
+streamlit_env/
+outputs_eval/
+outputs/
